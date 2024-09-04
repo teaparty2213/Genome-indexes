@@ -7,15 +7,16 @@
 #include <vector>
 #include <random>
 
-void update_VandI(const std::string X, std::vector<int> & V, std::vector<int> & I, int & f, const int h, const int i, const int j) { // インデックスk=i~jの範囲でV[I[k]]とI[k]を更新する
+void update_VandI(const std::string X, std::vector<int> & V, std::vector<int> & I, const int n, int & f, const int h, const int i, const int j) { // インデックスk=i~jの範囲でV[I[k]]とI[k]を更新する
     int key = j;
     for (int k = key; k >= i; k--) {
-        if (h == 0 && X[abs(I[k]) + h] != X[abs(I[key]) + h]) key = k; // 異なる文字が来たらkeyを更新
-        if (h > 0 && V[abs(I[k]) + h] != V[abs(I[key]) + h]) key = k;
+        if (h == 0 && X[abs(I[k]) + h] != X[abs(I[key]) + h]) key = k; // h=0のときは異なる文字が来たらkeyを更新
+        if (h > 0 && V[abs(I[k]) + h] != V[abs(I[key]) + h]) key = k; // h>0のときはXでなくVを見る
         V[abs(I[k])] = key; // V[I[k]]をupdate
     }
     for (int k = j; k >= i; k--) { // I[k]がsorted groupなら-1倍してf(combined sorted groupの要素数)を1増やす．debugの際はI[i]をabs()して使うことに注意
-        if (V[abs(I[k])] != V[abs(I[k + 1])] && V[abs(I[k])] != V[abs(I[k - 1])]) { I[k] *= -1; f++; }
+        if (k == n - 1 && V[abs(I[k])] != V[abs(I[k - 1])]) { I[k] *= -1; f++; } // 配列Iの範囲外参照を避けるために追加
+        else if (V[abs(I[k])] != V[abs(I[k + 1])] && V[abs(I[k])] != V[abs(I[k - 1])]) { I[k] *= -1; f++; }
     }
 }
 
@@ -36,7 +37,7 @@ void init_VandI(const std::string X, std::vector<int> & V, std::vector<int> & I,
             if (X[i] == alphabet[j]) { I[sum[j]] = i; sum[j]++; } // step(1) Iを初期化
         }
     }
-    update_VandI(X, V, I, f, h, 0, n - 1); // step(2) Vを初期化．step(3) Lを初期化．ここでは論文のrefinementに合わせて，Lを使わずにIを変形することでgroupの長さを示す
+    update_VandI(X, V, I, n, f, h, 0, n - 1); // step(2) Vを初期化．step(3) Lを初期化．ここでは論文のrefinementに合わせて，Lを使わずにIを変形することでgroupの長さを示す
 }
 
 void tsQsort(std::vector<int> & V, std::vector<int> & I, const int h, const int i, const int j, std::mt19937 & rng) {
@@ -65,50 +66,20 @@ void SALS(const std::string X, std::vector<int> & V, std::vector<int> & I, const
     int f = 0; // combined sorted groupの要素数．論文ではI[0]にその情報を格納していたが，ここでは変数1つを特別に使用する
     int h = 0; // h-order
     init_VandI(X, V, I, n, alphabet, f, h); // 論文のFig.1におけるstep(1)~(3)
-    std::cout << "h= " << h << "\n";
-    std::cout << "I: ";
-    for (auto i : I) {
-        std::cout << i << " ";
-    }
-    std::cout << "\n";
-    std::cout << "V: "; 
-    for (int i = 0; i < n; i++) {
-        std::cout << V[abs(I[i])] << " ";
-    }
-    std::cout << "\n";
     h = 1; // 1-order
-    while (f < n) {
+    while (f < n && h <= n) {
         int i = 0; // iはunsorted groupの左端を表す
         while (i < n) {
             if (I[i] < 0) {i++; continue;}
             int j = i; // jはunsorted groupの右端を表す
-            while (V[abs(I[j + 1])] == V[abs(I[i])]) j++;
-            tsQsort(V, I, h, i, j, rng); // インデックスk=i~jの範囲でV[|I[k]|+h]をキーとしたI[k]のternary-split quicksort
-            update_VandI(X, V, I, f, h, i, j); // ソートされたI[k]を使ってV[I[k]]とI[k]を更新
-            std::cout << "(h,i,j)= (" << h << "," << i << "," << j << ")\n";
-            std::cout << "I: ";
-            for (auto i : I) {
-                std::cout << i << " ";
-            }
-            std::cout << "\n";
-            std::cout << "V: "; 
-            for (int i = 0; i < n; i++) {
-                std::cout << V[abs(I[i])] << " ";
-            }
-            std::cout << "\n";
+            while (j + 1 < n && V[abs(I[j + 1])] == V[abs(I[i])]) j++;
+            tsQsort(V, I, h, i, j, rng); // step(4) インデックスk=i~jの範囲でV[|I[k]|+h]をキーとしたI[k]のternary-split quicksort
+            update_VandI(X, V, I, n, f, h, i, j); //step(5,6) ソートされたI[k]を使ってV[I[k]]とI[k]を更新
             i = j + 1; // 次のgroupのためにiを更新
         }
-        std::cout << "f = " << f << "\n";
-        std::cout << "I: ";
-        for (auto i : I) {
-        std::cout << i << " ";
-        }
-        std::cout << "\n";
-        std::cout << "V: "; 
-        for (int i = 0; i < n; i++) {
-            std::cout << V[abs(I[i])] << " ";
-        }
-        std::cout << "\n";
         h *= 2;
+    }
+    for (int i = 0; i < n; i++) {
+        I[i] *= -1; // Iの要素は全て負なので-1倍して元に戻す
     }
 }
