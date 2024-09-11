@@ -1,3 +1,3 @@
 # Genome-indexes
 
- SA-IS作ります
+BWT作ります．その前にRNA Velocityの勉強してみたいかも．
