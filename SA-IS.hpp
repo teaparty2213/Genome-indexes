@@ -61,22 +61,18 @@ std::vector<int> SAIS(const std::vector<int> & S, const int n, const int max) {
     int m = max + 1; // bucketの個数
     std::vector<int> t(n, 0); // 0はS-type, 1はL-type
     std::vector<int> sum(m, 0); sum[0] = 1; // 各アルファベットの個数
-    std::vector<int> P1(n, -1); // S[i]がLMSならばP1[i]!=-1．LMSのチャックを定数時間で行うために使用
-    std::vector<int> LMS; // LMSを小さい順に格納する．inducedSortで使う
+    std::vector<int> P1(n, -1); // S[i]がLMSならばP1[i]!=-1．LMSのチェックを定数時間で行うために使用
+    std::vector<int> LMS; // LMSの順序を保存．inducedSortで使う
     for (int i = n - 2; i >= 0; i--) { // 論文のFigure1における(1) SをスキャンしてL-typeとS-typeをtに入れる
         if (S[i] == S[i + 1]) t[i] = t[i + 1];
         else if (S[i] > S[i + 1]) t[i] = 1;
         sum[S[i]]++; // 各アルファベットの個数を数える
         if (t[i] == 1 && t[i + 1] == 0) { LMS.push_back(i + 1); P1[i + 1] = 0; }// (2) tをスキャンしてLMSを見つける
     }
-    std::vector<int> L(m, 0); std::vector<int> R(m, 0); // 各bucketの端のindex
+    std::vector<int> L(m, 0); std::vector<int> R(m, 0); // 各bucketの左端と右端のindex
     for (int i = 0; i < m; i++) {
-        if (i < m - 1) {
-            L[i + 1] = L[i] + sum[i];
-        }
-        if (i > 0) {
-            R[i] = R[i - 1] + sum[i];
-        }
+        if (i < m - 1) { L[i + 1] = L[i] + sum[i]; }
+        if (i > 0) { R[i] = R[i - 1] + sum[i]; }
     }
     std::vector<int> SA(n, -1);
     std::vector<int> L_copy = L; std::vector<int> R_copy = R; // LとRは後で使うのでdeep copyしたものをinducedSortで使う
@@ -88,9 +84,7 @@ std::vector<int> SAIS(const std::vector<int> & S, const int n, const int max) {
     if (unique) { // (5)~(9) 正しい順序でLMSを作り直す，もしくは再帰でLMSの順序を決める
         LMS.clear(); LMS.resize(new_max + 1); 
         for (int i = 0; i < n; i++) {
-            if (P1[i] != -1) {
-                LMS[P1[i]] = i; // (7) S1から直接正しいLMSを計算
-            }
+            if (P1[i] != -1) { LMS[P1[i]] = i; } // (7) S1から直接正しいLMSを計算
         }
     }
     else {
@@ -100,9 +94,7 @@ std::vector<int> SAIS(const std::vector<int> & S, const int n, const int max) {
             if (t[i] == 0 && t[i - 1] == 1) asLMS.push_back(i);
         }
         LMS.clear();
-        for (int i = 0; i < rec.size(); i++) {
-            LMS.push_back(asLMS[rec[i]]);
-        }
+        for (int i = 0; i < rec.size(); i++) { LMS.push_back(asLMS[rec[i]]); }
     }
     for (int i = 0; i < n; i++) { SA[i] = -1; } // SAを-1で再び初期化
     inducedSort(S, t, SA, LMS, L, R, n, m); // (10) 正しいLMSを使ってSAをinducedSortする

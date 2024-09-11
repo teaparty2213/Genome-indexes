@@ -30,8 +30,6 @@ void StoI(const std::string & X, std::vector<int> & Y, const int n, const std::v
 
 int main() {
     std::vector<char> alphabet = {'$', 'A', 'C', 'G', 'T'}; // 用途としてゲノム配列解析を想定している
-    std::string X; // Suffix Arrayを作る文字列
-    int n = 0; // 文字列の長さ
     std::mt19937 rng; // 乱数生成器
     std::random_device seed_gen;
     auto seed = seed_gen();
@@ -41,8 +39,8 @@ int main() {
     const int algo = 1; // 0,1で指定(0: Larsson-Sadakane, 1: Induced Sorting)
 
     if (mode == 0) { // 自分で決めた文字列に対してsuffix arrayを作る
-        X = "ATAATACGATAATAA$";
-        n = X.length();
+        std::string X = "ATAATACGATAATAA$";
+        int n = X.length();
         if (algo == 0) {
             std::vector<int> V(n, 0); // inverse suffix array．groupを表す
             std::vector<int> I(n, 0); // 最終的なoutput．論文のrefinementに合わせてLの役割も兼ねている
@@ -58,10 +56,11 @@ int main() {
 
     else if (mode == 1) {
         std::vector<int> testLen = {100, 1000, 10000, 100000, 1000000, 10000000};
-        for (auto L : testLen) {
-            strGen(X, L, alphabet, rng);
-            n = X.length();
-            if (algo == 0) {
+        if (algo == 0) {
+            for (auto L : testLen) {
+                std::string X; // Suffix Arrayを作る文字列
+                int n = L; // 文字列の長さ
+                strGen(X, L, alphabet, rng);
                 std::vector<int> V(n, 0); // inverse suffix array．groupを表す
                 std::vector<int> I(n, 0); // 最終的なoutput．論文のrefinementに合わせてLの役割も兼ねている
 
@@ -71,7 +70,12 @@ int main() {
                 auto CPU_time = double(end - start) / CLOCKS_PER_SEC;
                 std::cout << L << ": " << CPU_time << "\n";
             }
-            else if (algo == 1) {
+        }
+        else if (algo == 1) {
+            for (auto L : testLen) {
+                std::string X; // Suffix Arrayを作る文字列
+                int n = L; // 文字列の長さ
+                strGen(X, L, alphabet, rng);
                 int max = alphabet.size() - 1;
                 std::vector<int> Y(n, 0); // Xを0~maxの整数列に変換したもの
                 StoI(X, Y, n, alphabet);
